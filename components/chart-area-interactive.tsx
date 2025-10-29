@@ -1,7 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, ResponsiveContainer, Tooltip } from "recharts"
+import { CircuitData } from "@/lib/api-client"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
@@ -29,263 +30,256 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
+import { Button } from "@/components/ui/button"
+import { IconRefresh } from "@tabler/icons-react"
 
-export const description = "An interactive area chart"
+export const description = "An interactive circuit status chart"
 
-const chartData = [
-  { date: "2024-04-01", desktop: 222, mobile: 150 },
-  { date: "2024-04-02", desktop: 97, mobile: 180 },
-  { date: "2024-04-03", desktop: 167, mobile: 120 },
-  { date: "2024-04-04", desktop: 242, mobile: 260 },
-  { date: "2024-04-05", desktop: 373, mobile: 290 },
-  { date: "2024-04-06", desktop: 301, mobile: 340 },
-  { date: "2024-04-07", desktop: 245, mobile: 180 },
-  { date: "2024-04-08", desktop: 409, mobile: 320 },
-  { date: "2024-04-09", desktop: 59, mobile: 110 },
-  { date: "2024-04-10", desktop: 261, mobile: 190 },
-  { date: "2024-04-11", desktop: 327, mobile: 350 },
-  { date: "2024-04-12", desktop: 292, mobile: 210 },
-  { date: "2024-04-13", desktop: 342, mobile: 380 },
-  { date: "2024-04-14", desktop: 137, mobile: 220 },
-  { date: "2024-04-15", desktop: 120, mobile: 170 },
-  { date: "2024-04-16", desktop: 138, mobile: 190 },
-  { date: "2024-04-17", desktop: 446, mobile: 360 },
-  { date: "2024-04-18", desktop: 364, mobile: 410 },
-  { date: "2024-04-19", desktop: 243, mobile: 180 },
-  { date: "2024-04-20", desktop: 89, mobile: 150 },
-  { date: "2024-04-21", desktop: 137, mobile: 200 },
-  { date: "2024-04-22", desktop: 224, mobile: 170 },
-  { date: "2024-04-23", desktop: 138, mobile: 230 },
-  { date: "2024-04-24", desktop: 387, mobile: 290 },
-  { date: "2024-04-25", desktop: 215, mobile: 250 },
-  { date: "2024-04-26", desktop: 75, mobile: 130 },
-  { date: "2024-04-27", desktop: 383, mobile: 420 },
-  { date: "2024-04-28", desktop: 122, mobile: 180 },
-  { date: "2024-04-29", desktop: 315, mobile: 240 },
-  { date: "2024-04-30", desktop: 454, mobile: 380 },
-  { date: "2024-05-01", desktop: 165, mobile: 220 },
-  { date: "2024-05-02", desktop: 293, mobile: 310 },
-  { date: "2024-05-03", desktop: 247, mobile: 190 },
-  { date: "2024-05-04", desktop: 385, mobile: 420 },
-  { date: "2024-05-05", desktop: 481, mobile: 390 },
-  { date: "2024-05-06", desktop: 498, mobile: 520 },
-  { date: "2024-05-07", desktop: 388, mobile: 300 },
-  { date: "2024-05-08", desktop: 149, mobile: 210 },
-  { date: "2024-05-09", desktop: 227, mobile: 180 },
-  { date: "2024-05-10", desktop: 293, mobile: 330 },
-  { date: "2024-05-11", desktop: 335, mobile: 270 },
-  { date: "2024-05-12", desktop: 197, mobile: 240 },
-  { date: "2024-05-13", desktop: 197, mobile: 160 },
-  { date: "2024-05-14", desktop: 448, mobile: 490 },
-  { date: "2024-05-15", desktop: 473, mobile: 380 },
-  { date: "2024-05-16", desktop: 338, mobile: 400 },
-  { date: "2024-05-17", desktop: 499, mobile: 420 },
-  { date: "2024-05-18", desktop: 315, mobile: 350 },
-  { date: "2024-05-19", desktop: 235, mobile: 180 },
-  { date: "2024-05-20", desktop: 177, mobile: 230 },
-  { date: "2024-05-21", desktop: 82, mobile: 140 },
-  { date: "2024-05-22", desktop: 81, mobile: 120 },
-  { date: "2024-05-23", desktop: 252, mobile: 290 },
-  { date: "2024-05-24", desktop: 294, mobile: 220 },
-  { date: "2024-05-25", desktop: 201, mobile: 250 },
-  { date: "2024-05-26", desktop: 213, mobile: 170 },
-  { date: "2024-05-27", desktop: 420, mobile: 460 },
-  { date: "2024-05-28", desktop: 233, mobile: 190 },
-  { date: "2024-05-29", desktop: 78, mobile: 130 },
-  { date: "2024-05-30", desktop: 340, mobile: 280 },
-  { date: "2024-05-31", desktop: 178, mobile: 230 },
-  { date: "2024-06-01", desktop: 178, mobile: 200 },
-  { date: "2024-06-02", desktop: 470, mobile: 410 },
-  { date: "2024-06-03", desktop: 103, mobile: 160 },
-  { date: "2024-06-04", desktop: 439, mobile: 380 },
-  { date: "2024-06-05", desktop: 88, mobile: 140 },
-  { date: "2024-06-06", desktop: 294, mobile: 250 },
-  { date: "2024-06-07", desktop: 323, mobile: 370 },
-  { date: "2024-06-08", desktop: 385, mobile: 320 },
-  { date: "2024-06-09", desktop: 438, mobile: 480 },
-  { date: "2024-06-10", desktop: 155, mobile: 200 },
-  { date: "2024-06-11", desktop: 92, mobile: 150 },
-  { date: "2024-06-12", desktop: 492, mobile: 420 },
-  { date: "2024-06-13", desktop: 81, mobile: 130 },
-  { date: "2024-06-14", desktop: 426, mobile: 380 },
-  { date: "2024-06-15", desktop: 307, mobile: 350 },
-  { date: "2024-06-16", desktop: 371, mobile: 310 },
-  { date: "2024-06-17", desktop: 475, mobile: 520 },
-  { date: "2024-06-18", desktop: 107, mobile: 170 },
-  { date: "2024-06-19", desktop: 341, mobile: 290 },
-  { date: "2024-06-20", desktop: 408, mobile: 450 },
-  { date: "2024-06-21", desktop: 169, mobile: 210 },
-  { date: "2024-06-22", desktop: 317, mobile: 270 },
-  { date: "2024-06-23", desktop: 480, mobile: 530 },
-  { date: "2024-06-24", desktop: 132, mobile: 180 },
-  { date: "2024-06-25", desktop: 141, mobile: 190 },
-  { date: "2024-06-26", desktop: 434, mobile: 380 },
-  { date: "2024-06-27", desktop: 448, mobile: 490 },
-  { date: "2024-06-28", desktop: 149, mobile: 200 },
-  { date: "2024-06-29", desktop: 103, mobile: 160 },
-  { date: "2024-06-30", desktop: 446, mobile: 400 },
-]
+interface ChartAreaInteractiveProps {
+  data: CircuitData[]
+  onRefresh: () => void
+  isLoading: boolean
+}
 
-const chartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  desktop: {
-    label: "Desktop",
-    color: "hsl(217, 91%, 60%)", // Blue 500
-  },
-  mobile: {
-    label: "Mobile", 
-    color: "hsl(213, 94%, 68%)", // Blue 400
-  },
-} satisfies ChartConfig
+type ChartViewType = "status" | "serviceType" | "partner"
 
-export function ChartAreaInteractive() {
+export function ChartAreaInteractive({ data, onRefresh, isLoading }: ChartAreaInteractiveProps) {
   const isMobile = useIsMobile()
-  const [timeRange, setTimeRange] = React.useState("90d")
+  const [chartView, setChartView] = React.useState<ChartViewType>("status")
 
   React.useEffect(() => {
     if (isMobile) {
-      setTimeRange("7d")
+      setChartView("status")
     }
   }, [isMobile])
 
-  const filteredData = chartData.filter((item) => {
-    const date = new Date(item.date)
-    const referenceDate = new Date("2024-06-30")
-    let daysToSubtract = 90
-    if (timeRange === "30d") {
-      daysToSubtract = 30
-    } else if (timeRange === "7d") {
-      daysToSubtract = 7
+  // Process data based on selected view
+  const processedData = React.useMemo(() => {
+    if (!data || data.length === 0) return []
+
+    switch (chartView) {
+      case "status": {
+        const statusCounts = data.reduce((acc, circuit) => {
+          const status = circuit.status || 'Unknown'
+          acc[status] = (acc[status] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+
+        return Object.entries(statusCounts)
+          .map(([status, count]) => ({
+            name: status,
+            value: count,
+            fill: getStatusColor(status)
+          }))
+          .sort((a, b) => b.value - a.value)
+      }
+
+      case "serviceType": {
+        const serviceCounts = data.reduce((acc, circuit) => {
+          const serviceType = circuit.servicetype || 'Unknown'
+          acc[serviceType] = (acc[serviceType] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+
+        return Object.entries(serviceCounts)
+          .map(([serviceType, count]) => ({
+            name: serviceType,
+            value: count,
+            fill: getServiceTypeColor(serviceType)
+          }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 10) // Top 10 service types
+      }
+
+      case "partner": {
+        const partnerCounts = data.reduce((acc, circuit) => {
+          const partner = circuit.partnerName || circuit.partner || 'Unknown'
+          acc[partner] = (acc[partner] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+
+        return Object.entries(partnerCounts)
+          .map(([partner, count]) => ({
+            name: partner,
+            value: count,
+            fill: getPartnerColor(partner)
+          }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 10) // Top 10 partners
+      }
+
+      default:
+        return []
     }
-    const startDate = new Date(referenceDate)
-    startDate.setDate(startDate.getDate() - daysToSubtract)
-    return date >= startDate
-  })
+  }, [data, chartView])
+
+  const chartConfig: ChartConfig = {
+    value: {
+      label: "Count",
+    },
+    ...processedData.reduce((acc, item, index) => {
+      acc[item.name] = {
+        label: item.name,
+        color: item.fill,
+      }
+      return acc
+    }, {} as Record<string, { label: string; color: string }>)
+  }
+
+  const getChartTitle = () => {
+    switch (chartView) {
+      case "status":
+        return "Circuits by Status"
+      case "serviceType":
+        return "Top Service Types"
+      case "partner":
+        return "Top Partners"
+      default:
+        return "Circuit Overview"
+    }
+  }
+
+  const getChartDescription = () => {
+    switch (chartView) {
+      case "status":
+        return "Distribution of circuits by status"
+      case "serviceType":
+        return "Top 10 service types by circuit count"
+      case "partner":
+        return "Top 10 partners by circuit count"
+      default:
+        return "Circuit data overview"
+    }
+  }
 
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>Total Visitors</CardTitle>
-        <CardDescription>
-          <span className="hidden @[540px]/card:block">
-            Total for the last 3 months
-          </span>
-          <span className="@[540px]/card:hidden">Last 3 months</span>
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>{getChartTitle()}</CardTitle>
+            <CardDescription>{getChartDescription()}</CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            disabled={isLoading}
+          >
+            <IconRefresh className={`mr-2 size-4 ${isLoading ? 'animate-spin' : ''}`} />
+            {isLoading ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </div>
         <CardAction>
           <ToggleGroup
             type="single"
-            value={timeRange}
-            onValueChange={setTimeRange}
+            value={chartView}
+            onValueChange={(value) => value && setChartView(value as ChartViewType)}
             variant="outline"
             className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
           >
-            <ToggleGroupItem value="90d">Last 3 months</ToggleGroupItem>
-            <ToggleGroupItem value="30d">Last 30 days</ToggleGroupItem>
-            <ToggleGroupItem value="7d">Last 7 days</ToggleGroupItem>
+            <ToggleGroupItem value="status">By Status</ToggleGroupItem>
+            <ToggleGroupItem value="serviceType">By Service</ToggleGroupItem>
+            <ToggleGroupItem value="partner">By Partner</ToggleGroupItem>
           </ToggleGroup>
-          <Select value={timeRange} onValueChange={setTimeRange}>
+          <Select value={chartView} onValueChange={(value) => setChartView(value as ChartViewType)}>
             <SelectTrigger
               className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
               size="sm"
-              aria-label="Select a value"
+              aria-label="Select chart view"
             >
-              <SelectValue placeholder="Last 3 months" />
+              <SelectValue placeholder="Select view" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
-              <SelectItem value="90d" className="rounded-lg">
-                Last 3 months
+              <SelectItem value="status" className="rounded-lg">
+                By Status
               </SelectItem>
-              <SelectItem value="30d" className="rounded-lg">
-                Last 30 days
+              <SelectItem value="serviceType" className="rounded-lg">
+                By Service Type
               </SelectItem>
-              <SelectItem value="7d" className="rounded-lg">
-                Last 7 days
+              <SelectItem value="partner" className="rounded-lg">
+                By Partner
               </SelectItem>
             </SelectContent>
           </Select>
         </CardAction>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-[250px] w-full"
-        >
-          <AreaChart data={filteredData}>
-            <defs>
-              <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-desktop)"
-                  stopOpacity={1.0}
+        {processedData.length === 0 ? (
+          <div className="flex items-center justify-center h-64 text-muted-foreground">
+            No data available
+          </div>
+        ) : (
+          <ChartContainer
+            config={chartConfig}
+            className="aspect-auto h-[250px] w-full"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={processedData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="name"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  angle={-45}
+                  textAnchor="end"
+                  height={100}
+                  tick={{ fontSize: 12 }}
                 />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-desktop)"
-                  stopOpacity={0.1}
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      indicator="dot"
+                      labelFormatter={(label) => label}
+                      formatter={(value: number) => [value.toLocaleString(), 'Count']}
+                    />
+                  }
                 />
-              </linearGradient>
-              <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-mobile)"
-                  stopOpacity={0.8}
+                <Bar
+                  dataKey="value"
+                  radius={[4, 4, 0, 0]}
+                  fill={(entry: any) => entry.fill}
                 />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-mobile)"
-                  stopOpacity={0.1}
-                />
-              </linearGradient>
-            </defs>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value)
-                return date.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })
-              }}
-            />
-            <ChartTooltip
-              cursor={false}
-              content={
-                <ChartTooltipContent
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  }}
-                  indicator="dot"
-                />
-              }
-            />
-            <Area
-              dataKey="mobile"
-              type="natural"
-              fill="url(#fillMobile)"
-              stroke="var(--color-mobile)"
-              stackId="a"
-            />
-            <Area
-              dataKey="desktop"
-              type="natural"
-              fill="url(#fillDesktop)"
-              stroke="var(--color-desktop)"
-              stackId="a"
-            />
-          </AreaChart>
-        </ChartContainer>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   )
+}
+
+// Helper functions for colors
+function getStatusColor(status: string): string {
+  const colors: Record<string, string> = {
+    'Active': 'hsl(142, 76%, 36%)', // green-600
+    'Inactive': 'hsl(0, 84%, 60%)', // red-500
+    'Pending': 'hsl(38, 92%, 50%)', // yellow-500
+    'Maintenance': 'hsl(221, 83%, 53%)', // blue-600
+    'Unknown': 'hsl(215, 14%, 34%)', // slate-600
+  }
+  return colors[status] || 'hsl(215, 14%, 34%)'
+}
+
+function getServiceTypeColor(serviceType: string): string {
+  const colors: Record<string, string> = {
+    'STARLINK': 'hsl(263, 70%, 50%)', // purple-600
+    'FIBER': 'hsl(142, 76%, 36%)', // green-600
+    'WIRELESS': 'hsl(221, 83%, 53%)', // blue-600
+    'SATELLITE': 'hsl(38, 92%, 50%)', // yellow-500
+    'MPLS': 'hsl(0, 84%, 60%)', // red-500
+    'Unknown': 'hsl(215, 14%, 34%)', // slate-600
+  }
+  return colors[serviceType] || 'hsl(215, 14%, 34%)'
+}
+
+function getPartnerColor(partner: string): string {
+  // Generate consistent colors based on partner name hash
+  let hash = 0
+  for (let i = 0; i < partner.length; i++) {
+    hash = partner.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const hue = Math.abs(hash) % 360
+  return `hsl(${hue}, 70%, 50%)`
 }

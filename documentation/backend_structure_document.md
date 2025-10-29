@@ -1,179 +1,197 @@
 # Backend Structure Document
 
-This document outlines the backend architecture, hosting, and infrastructure for the **codeguide-starter** project. It uses plain language so anyone can understand how the backend is set up and how it supports the application.
+This document outlines the backend architecture, hosting setup, and infrastructure components for the Executive Information System (EIS) visualization dashboard. It is written in clear, everyday language so that anyone can understand how the backend works, how data flows, and how we ensure security and performance.
 
 ## 1. Backend Architecture
 
-- **Framework and Design Pattern**
-  - We use **Next.js API Routes** to handle all server-side logic. These routes live alongside the frontend code in the same repository, making development and deployment simpler.
-  - The backend follows a **layered pattern**:
-    1. **API Layer**: Receives requests (login, registration, data fetch).  
-    2. **Service Layer**: Contains the core business logic (user validation, password hashing).  
-    3. **Data Access Layer**: Talks to the database via a simple ORM (e.g., Prisma or TypeORM).
+Overall, the backend is composed of two main parts:
 
-- **Scalability**
-  - Stateless API routes can scale horizontally—new instances can spin up on demand.  
-  - We can add caching or a message queue (e.g., Redis or RabbitMQ) without changing the core code.
+1. An existing ASP.NET C# Web API that handles data access and business logic.  
+2. A Next.js application (App Router) that serves the dashboard UI and fetches data from the C# API on the server side.
 
-- **Maintainability**
-  - Code for each feature is grouped by route (authentication, dashboard).  
-  - A service layer separates complex logic from request handling.
+Key design patterns and frameworks:
 
-- **Performance**
-  - Lightweight Node.js handlers keep response times low.  
-  - Future use of database connection pooling and Redis for caching repeated queries.
+- ASP.NET Web API (MVC-ish pattern) for data access and endpoint routing.  
+- Entity Framework (or ADO.NET) on the C# side for database queries and data mapping.  
+- Next.js server components for secure, server-side data fetching and page rendering.  
+- React functional components with shadcn/ui and Tailwind CSS for a modular, component-based UI.
+
+How it supports scalability, maintainability, and performance:
+
+- Separation of concerns: the C# API handles all database queries and business rules, while Next.js focuses on rendering and user interface.  
+- Server-side rendering (SSR) in Next.js keeps sensitive API details hidden from browsers and speeds up time to first meaningful paint.  
+- Microservice-style decoupling: the dashboard can scale independently of the main ASP.NET application.  
+- Clear folder structure (`/app`, `/components`, `/lib`) makes it easy to find and extend code.
 
 ## 2. Database Management
 
-- **Database Choice**
-  - We recommend **PostgreSQL** for structured data and reliable transactions.  
-  - In-memory caching can be added later with **Redis** for session tokens or frequently read data.
+We use a relational database to store circuit data and related entities.
 
-- **Data Storage and Access**
-  - Use an ORM like **Prisma** or **TypeORM** to map JavaScript/TypeScript objects to database tables.
-  - Connection pooling ensures efficient use of database connections under load.
-  - Migrations track schema changes over time, keeping development, staging, and production in sync.
+Database technology:
 
-- **Data Practices**
-  - Passwords are never stored in plain text—they are salted and hashed with **bcrypt** before saving.
-  - All outgoing data is typed and validated to prevent malformed records.
+- Microsoft SQL Server (SQL) hosted in a managed environment (e.g., Azure SQL or on-premises).  
+
+Data storage and access:
+
+- Tables represent entities like Circuits, Customers, Partners, and Regions.  
+- The ASP.NET API executes parameterized SQL queries (or uses Entity Framework) to read and write data.  
+- Optional caching layer (Redis) can store frequent query results, reducing database load.  
+- Backup and restore practices ensure data is protected (nightly full backups, hourly transaction‐log backups).
 
 ## 3. Database Schema
 
-### Human-Readable Format
+Below is a human-readable description of the key tables and their columns, followed by a sample SQL schema.
 
-- **Users**
-  - **id**: Unique identifier  
-  - **email**: User’s email address (unique)  
-  - **password_hash**: Securely hashed password  
-  - **created_at**: Account creation timestamp
+Circuits Table:
+- CircuitID (primary key, integer)  
+- CustomerDescription (text)  
+- Status (text)  
+- ServiceType (text)  
+- PartnerID (foreign key to Partners)  
+- Region (text)  
+- LatitudeStart, LongitudeStart (float)  
+- LatitudeEnd, LongitudeEnd (float)
 
-- **Sessions**
-  - **id**: Unique session record  
-  - **user_id**: Links to a user  
-  - **token**: Random string for authentication  
-  - **expires_at**: When the token stops working  
-  - **created_at**: When the session was created
+Partners Table:
+- PartnerID (primary key, integer)  
+- PartnerName (text)
 
-- **DashboardItems** *(optional for dynamic data)*
-  - **id**: Unique record  
-  - **title**: Item title  
-  - **content**: Item details  
-  - **created_at**: When the item was added
-
-### SQL Schema (PostgreSQL)
+Sample SQL schema (SQL Server):
 ```sql
--- Users table
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
+CREATE TABLE Partners (
+  PartnerID INT IDENTITY(1,1) PRIMARY KEY,
+  PartnerName NVARCHAR(100) NOT NULL
 );
 
--- Sessions table
-CREATE TABLE sessions (
-  id SERIAL PRIMARY KEY,
-  user_id INT REFERENCES users(id) ON DELETE CASCADE,
-  token VARCHAR(255) UNIQUE NOT NULL,
-  expires_at TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
+CREATE TABLE Circuits (
+  CircuitID INT IDENTITY(1,1) PRIMARY KEY,
+  CustomerDescription NVARCHAR(200) NOT NULL,
+  Status NVARCHAR(50) NOT NULL,
+  ServiceType NVARCHAR(50) NOT NULL,
+  PartnerID INT NOT NULL FOREIGN KEY REFERENCES Partners(PartnerID),
+  Region NVARCHAR(50) NOT NULL,
+  LatitudeStart FLOAT NULL,
+  LongitudeStart FLOAT NULL,
+  LatitudeEnd FLOAT NULL,
+  LongitudeEnd FLOAT NULL
 );
 
--- Dashboard items table
-CREATE TABLE dashboard_items (
-  id SERIAL PRIMARY KEY,
-  title TEXT NOT NULL,
-  content TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```  
+-- Index to speed up queries by status or partner
+CREATE INDEX IX_Circuits_Status ON Circuits(Status);
+CREATE INDEX IX_Circuits_PartnerID ON Circuits(PartnerID);
+``` 
 
 ## 4. API Design and Endpoints
 
-- **Approach**: We follow a **RESTful** style, grouping related endpoints under `/api` directories.
+We follow a RESTful approach on the ASP.NET C# side. Next.js does not expose its own API routes; it fetches directly from the C# API.
 
-- **Key Endpoints**
-  - `POST /api/auth/register`  
-    • Accepts `{ email, password }`  
-    • Creates a new user and issues a session token  
-  - `POST /api/auth/login`  
-    • Accepts `{ email, password }`  
-    • Verifies credentials and returns a session token  
-  - `POST /api/auth/logout`  
-    • Invalidates the session token on the server  
-  - `GET /api/dashboard/data`  
-    • Requires a valid session  
-    • Returns user-specific data or dashboard items  
+Key endpoints:
 
-- **Communication**
-  - Frontend sends JSON requests; backend replies with JSON and appropriate HTTP status codes.  
-  - Protected routes check for a valid session token (in cookies or Authorization header).
+- **GET /api/circuits/report**  
+  • Purpose: Retrieve a list of circuit records (can accept optional query parameters like `status`, `partnerId`, `page`, `pageSize`).  
+  • Response: JSON array of circuit objects with fields matching the database schema.  
+
+- **Authentication endpoints** (if using ASP.NET Identity and JWT):  
+  • POST /api/auth/login  
+  • POST /api/auth/register  
+  • GET /api/auth/me  
+
+How they facilitate frontend-backend communication:
+
+- Next.js server components use `fetch()` with the appropriate authentication token (e.g., JWT in `Authorization` header) to call these endpoints.  
+- Responses are returned as JSON, validated in Next.js (using Zod) and passed to React components for rendering.
 
 ## 5. Hosting Solutions
 
-- **Cloud Provider**:  
-  - **Vercel** (recommended) offers seamless Next.js deployments, auto-scaling, and built-in CDN.  
-  - Alternatively, **Netlify** or any Node.js-capable host will work.
+We use managed cloud services to maximize reliability and cost-efficiency.
 
-- **Benefits**
-  - **Reliability**: Global servers and failover across regions.  
-  - **Scalability**: Auto-scale serverless functions based on traffic.  
-  - **Cost-Effectiveness**: Pay-per-use model means low cost for small projects.
+ASP.NET C# API:
+- Hosted on Azure App Service (Windows) or AWS Elastic Beanstalk (.NET platform).  
+- Connected to Azure SQL Database (or Amazon RDS for SQL Server).
+
+Next.js Dashboard:
+- Deployed to Vercel for global edge delivery and automatic SSL.  
+- Alternatively, containerized with Docker and deployed to Azure Container Instances (ACI) or AWS Fargate.
+
+Benefits:
+- Automatic scaling handles traffic spikes.  
+- Managed backups and high-availability SLAs.  
+- Pay-as-you-go pricing keeps costs tied to actual usage.
 
 ## 6. Infrastructure Components
 
-- **Load Balancer**
-  - Provided by the hosting platform—distributes API requests across function instances.
+To ensure fast, reliable performance and a smooth user experience, we include:
 
-- **CDN (Content Delivery Network)**
-  - Vercel’s global edge network caches static assets (CSS, JS, images) for faster page loads.
+- **Load Balancer:**  
+  • Azure Load Balancer or AWS ALB in front of the ASP.NET API to distribute traffic across instances.
 
-- **Caching**
-  - **Redis** (optional) for session storage or caching dashboard queries to reduce database load.
+- **Caching:**  
+  • Azure Cache for Redis (or AWS ElastiCache) for caching common query results like popular status lists.
 
-- **Object Storage**
-  - For file uploads or backups, integrate with AWS S3 or similar services.
+- **Content Delivery Network (CDN):**  
+  • Vercel’s global CDN automatically caches static assets of the Next.js app (CSS, JavaScript bundles).
 
-- **Message Queue**
-  - In future, use **RabbitMQ** or **Kafka** for background tasks (e.g., email notifications).
+- **SSL/TLS Certificates:**  
+  • Managed by Azure App Service / Vercel to secure all data in transit.
+
+These components work together to minimize latency, balance load, and offload repetitive tasks (caching) from the primary servers.
 
 ## 7. Security Measures
 
-- **Authentication & Authorization**
-  - Passwords hashed with **bcrypt** and salted.  
-  - Session tokens stored in secure, HttpOnly cookies or Authorization headers.  
-  - Protected endpoints verify tokens before proceeding.
+We implement multiple layers of security:
 
-- **Data Encryption**
-  - **HTTPS/TLS** encrypts data in transit.  
-  - Database connections use SSL to encrypt data between the app and the database.
+- **Authentication & Authorization:**  
+  • JWT-based tokens issued by the ASP.NET API.  
+  • Next.js server components include the token in each request.  
 
-- **Input Validation**
-  - Every incoming request is validated (e.g., valid email format, password length) to prevent SQL injection or other attacks.
+- **Transport Security:**  
+  • HTTPS enforced everywhere.  
+  • TLS 1.2+ only.
 
-- **Web Security Best Practices**
-  - Enable **CORS** policies to limit allowed origins.  
-  - Use **CSRF tokens** or same-site cookies to prevent cross-site requests.  
-  - Set secure headers with **Helmet** or a similar middleware.
+- **Data Encryption:**  
+  • Encryption at rest for the SQL database (Transparent Data Encryption).  
+  • Encryption in transit via SSL/TLS.
+
+- **Input Validation & Sanitization:**  
+  • Parameterized SQL queries or Entity Framework to prevent SQL injection.  
+  • Zod validation in Next.js to ensure the API response matches expected types.
+
+- **CORS Policy:**  
+  • Strictly allow only the dashboard origin to call the API, if calling from the browser.  
+
+- **Rate Limiting & DDoS Protection:**  
+  • Built-in protections from Azure App Service or AWS Shield.
 
 ## 8. Monitoring and Maintenance
 
-- **Performance Monitoring**
-  - Integrate **Sentry** or **LogRocket** for real-time crash reporting and performance tracing.  
-  - Use Vercel’s built-in analytics to track request latencies and error rates.
+We use a combination of services and tools to keep the backend healthy and troubleshoot issues quickly:
 
-- **Logging**
-  - Structured logs (JSON) for all API requests and errors, shipped to a log management service like **Datadog** or **Logflare**.
+- **Application Insights (Azure) or CloudWatch (AWS):**  
+  • Track API response times, error rates, and request volumes.  
 
-- **Health Checks**
-  - Define a `/health` endpoint that returns a 200 status if the service is up and the database is reachable.
+- **Logging:**  
+  • Serilog (C#) for structured logs in JSON format.  
+  • Vercel Analytics for Next.js performance metrics.
 
-- **Maintenance Strategies**
-  - Automated migrations run on deploy to keep the database schema up to date.  
-  - Scheduled dependency audits and security scans (e.g., `npm audit`).
-  - Regular backups of the database (daily or weekly depending on usage).
+- **Error Tracking:**  
+  • Sentry for front-end and back-end error capturing and alerting.
+
+- **Database Monitoring:**  
+  • Azure SQL metrics or RDS performance insights to watch CPU, memory, and query latency.
+
+- **Maintenance Strategy:**  
+  • Automated database backups with point-in-time restore.  
+  • Monthly dependency updates via CI/CD pipeline.  
+  • Quarterly security reviews.
 
 ## 9. Conclusion and Overall Backend Summary
 
-The backend for **codeguide-starter** is built on Next.js API Routes and Node.js, paired with PostgreSQL for data and optional Redis for caching. It follows a clear layered architecture that keeps code easy to maintain and extend. With RESTful endpoints for authentication and data, secure practices like password hashing and HTTPS, and hosting on Vercel for scalability and global performance, this setup meets the project’s goals for a fast, secure, and developer-friendly foundation. Future enhancements—such as background job queues, advanced monitoring, or richer data models—can be added without disrupting the core structure.
+This backend setup combines a proven ASP.NET C# API with a modern Next.js visualization layer. It delivers:
+
+- Clear separation of concerns, allowing independent scaling and updates.  
+- A relational SQL Server database with a straightforward schema for circuit data.  
+- Secure, JWT-protected REST endpoints for data access.  
+- A high-performance hosting environment using managed cloud services and CDNs.  
+- Robust security, monitoring, and maintenance practices to keep the system reliable.
+
+By following this structure, the EIS visualization dashboard can grow over time—adding new data sources, richer visualizations, and higher traffic loads—without sacrificing clarity, performance, or security.

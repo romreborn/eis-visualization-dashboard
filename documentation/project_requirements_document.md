@@ -1,117 +1,103 @@
-# Project Requirements Document: codeguide-starter
-
----
+# Project Requirements Document (PRD)
 
 ## 1. Project Overview
 
-The **codeguide-starter** project is a boilerplate web application that provides a ready-made foundation for any web project requiring secure user authentication and a post-login dashboard. It sets up the common building blocks—sign-up and sign-in pages, API routes to handle registration and login, and a simple dashboard interface driven by static data. By delivering this skeleton, it accelerates development time and ensures best practices are in place from day one.
+We are building an **Executive Information System (EIS) Visualization Dashboard** as a standalone Next.js application. Its main goal is to provide decision-makers with a modern, interactive interface to view, explore, and analyze complex network circuit data fetched from your existing ASP.NET C# backend. Instead of wrestling with raw SQL outputs or static reports, executives will have a dynamic table view, charts, and (eventually) map visualizations that surface critical metrics like circuit status, service type, partner distribution, and geographic endpoints.
 
-This starter kit is being built to solve the friction developers face when setting up repeated common tasks: credential handling, session management, page routing, and theming. Key objectives include: 1) delivering a fully working authentication flow (registration & login), 2) providing a gated dashboard area upon successful login, 3) establishing a clear, maintainable project structure using Next.js and TypeScript, and 4) demonstrating a clean theming approach with global and section-specific CSS. Success is measured by having an end-to-end login journey in under 200 lines of code and zero runtime type errors.
-
----
+This dashboard will streamline the process of monitoring and exploring circuit health, capacity, and deployment by decoupling the visualization layer from the legacy ASP.NET monolith. Key success criteria include secure access control, sub-second page loads for typical queries, a responsive UI with light/dark mode, and a seamless integration path—either embedded or linked—from your main application. By delivering this boilerplate, we empower your team to focus on advanced visualizations and business logic rather than boilerplate setup.
 
 ## 2. In-Scope vs. Out-of-Scope
 
-### In-Scope (Version 1)
-- User registration (sign-up) form with validation
-- User login (sign-in) form with validation
-- Next.js API routes under `/api/auth/route.ts` handling:
-  - Credential validation
-  - Password hashing (e.g., bcrypt)
-  - Session creation or JWT issuance
-- Protected dashboard pages under `/dashboard`:
-  - `layout.tsx` wrapping dashboard content
-  - `page.tsx` rendering static data from `data.json`
-- Global application layout in `/app/layout.tsx`
-- Basic styling via `globals.css` and `dashboard/theme.css`
-- TypeScript strict mode enabled
+### In-Scope (Version 1.0)
+
+*   User authentication (registration, login, session management) via **Better Auth** or token-based JWT flow.
+*   Protected dashboard route under `/app/dashboard` with server-side data fetching.
+*   Interactive data table showing SQL query results (`CircuitID`, `CustDesc`, `Status`, `ServiceType`, `Partner`, `RemRegion`, etc.).
+*   Basic charts (bar, pie) using shadcn/ui components for key metrics.
+*   Light and dark theme toggle via CSS variables.
+*   Data fetching layer in `/lib` using `fetch` to call a secure ASP.NET C# API endpoint that returns JSON.
+*   Environment variable configuration for API base URL and authentication secrets.
+*   Containerized Docker support and optional Vercel deployment config.
 
 ### Out-of-Scope (Later Phases)
-- Integration with a real database (PostgreSQL, MongoDB, etc.)
-- Advanced authentication flows (password reset, email verification, MFA)
-- Role-based access control (RBAC)
-- Multi-tenant or white-label theming
-- Unit, integration, or end-to-end testing suites
-- CI/CD pipeline and production deployment scripts
 
----
+*   Interactive map visualization (Leaflet/Mapbox) – placeholder only.
+*   Advanced filtering, sorting, and pagination on large datasets.
+*   Role-based access control beyond basic authenticated vs. unauthenticated.
+*   Export to PDF/Excel or scheduled email reports.
+*   Mobile-first layout or native mobile app.
+*   ML-driven anomaly detection or AI summarization.
+*   Detailed audit logging, compliance (e.g., GDPR consent flows), or multi-tenant support.
 
 ## 3. User Flow
 
-A new visitor lands on the root URL and sees a welcome page with options to **Sign Up** or **Sign In**. If they choose Sign Up, they fill in their email, password, and hit “Create Account.” The form submits to `/api/auth/route.ts`, which hashes the password, creates a new user session or token, and redirects them to the dashboard. If any input is invalid, an inline error message explains the issue (e.g., “Password too short”).
+A new user arrives at the dashboard URL. They land on the **sign-in** page where they can register or log in with an email and password. Upon successful authentication, the user is redirected to the **Dashboard Home**. The layout features a left sidebar for navigation (currently with “Dashboard” as the primary link) and a top bar with a theme toggle and user menu. No API keys or backend secrets ever reach the browser; all data calls are performed server-side.
 
-Once authenticated, the user is taken to the `/dashboard` route. Here they see a sidebar or header defined by `dashboard/layout.tsx`, and the main panel pulls in static data from `data.json`. They can log out (if that control is present), but otherwise their entire session is managed by server-side cookies or tokens. Returning users go directly to Sign In, submit credentials, and upon success they land back on `/dashboard`. Any unauthorized access to `/dashboard` redirects back to Sign In.
-
----
+Once inside the dashboard, the user immediately sees a **Data Table** displaying the latest circuit records fetched from the ASP.NET API. Above the table, small summary cards show total circuits, active vs. inactive counts, and service-type breakdowns. The user can switch between table and chart views via tabs. In chart view, bar charts categorize circuits by partner or region, and pie charts break down status counts. All UI elements adapt to light or dark mode instantly.
 
 ## 4. Core Features
 
-- **Sign-Up Page (`/app/sign-up/page.tsx`)**: Form fields for email & password, client-side validation, POST to `/api/auth`.
-- **Sign-In Page (`/app/sign-in/page.tsx`)**: Form fields for email & password, client-side validation, POST to `/api/auth`.
-- **Authentication API (`/app/api/auth/route.ts`)**: Handles both registration and login based on HTTP method, integrates password hashing (bcrypt) and session or JWT logic.
-- **Global Layout (`/app/layout.tsx` + `globals.css`)**: Shared header, footer, and CSS resets across all pages.
-- **Dashboard Layout (`/app/dashboard/layout.tsx` + `dashboard/theme.css`)**: Sidebar or top nav for authenticated flows, section-specific styling.
-- **Dashboard Page (`/app/dashboard/page.tsx`)**: Reads `data.json`, renders it as cards or tables.
-- **Static Data Source (`/app/dashboard/data.json`)**: Example dataset to demo dynamic rendering.
-- **TypeScript Configuration**: `tsconfig.json` with strict mode and path aliases (if any).
-
----
+*   **Authentication Module**: Sign up, log in, log out, session handling (Better Auth or JWT).
+*   **Protected Dashboard Route**: Server-side check of authentication before rendering.
+*   **Data Fetching Layer**: `/lib/fetchCircuits.ts` calls `GET /api/circuits/report` on the C# backend, parses JSON, returns typed data.
+*   **Data Table Component**: Reusable table with sortable columns, configurable via props.
+*   **Chart Components**: Bar and pie chart containers using shadcn/ui (or Chart.js under the hood).
+*   **Theming**: Light/dark toggle via Tailwind CSS and CSS variables.
+*   **Environment Config**: `.env.local` for `API_BASE_URL`, `AUTH_SECRET`, etc.
+*   **Deployment Setup**: `Dockerfile` and `docker-compose.yml`; Vercel config file.
 
 ## 5. Tech Stack & Tools
 
-- **Framework**: Next.js (App Router) for file-based routing, SSR/SSG, and API routes.
-- **Language**: TypeScript for type safety.
-- **UI Library**: React 18 for component-based UI.
-- **Styling**: Plain CSS via `globals.css` (global reset) and `theme.css` (sectional styling). Can easily migrate to CSS Modules or Tailwind in the future.
-- **Backend**: Node.js runtime provided by Next.js API routes.
-- **Password Hashing**: bcrypt (npm package).
-- **Session/JWT**: NextAuth.js or custom JWT logic (to be decided in implementation).
-- **IDE & Dev Tools**: VS Code with ESLint, Prettier extensions. Optionally, Cursor.ai for AI-assisted coding.
+**Frontend**
 
----
+*   Next.js (App Router) for server components and routing.
+*   React + TypeScript for type safety.
+*   Tailwind CSS + CSS Variables for rapid styling and theming.
+*   shadcn/ui for accessible, pre-built UI components.
+*   Better Auth (file-based) or custom JWT approach for auth.
+
+**Backend**
+
+*   Existing ASP.NET Core Web API (C#) exposing `/api/circuits/report`.
+*   SQL Server database with circuit data.
+*   Swagger/OpenAPI for API contract definition.
+
+**Tools & Libraries**
+
+*   Zod for runtime data validation of API responses.
+*   Vitest + React Testing Library for unit and component tests.
+*   Docker & docker-compose for local development and on-premise deployment.
+*   Vercel for optional cloud hosting.
+
+**IDE/Editor Integrations**
+
+*   VS Code with ESLint, Prettier, Tailwind IntelliSense.
+*   Optional plugin: Windsurf for AI-assisted code completion.
 
 ## 6. Non-Functional Requirements
 
-- **Performance**: Initial page load under 200 ms on a standard broadband connection. API responses under 300 ms.
-- **Security**:
-  - HTTPS only in production.
-  - Proper CORS, CSRF protection for API routes.
-  - Secure password storage (bcrypt with salt).
-  - No credentials or secrets checked into version control.
-- **Scalability**: Structure must support adding database integration, caching layers, and advanced auth flows without rewiring core app.
-- **Usability**: Forms should give real-time feedback on invalid input. Layout must be responsive (mobile > 320 px).
-- **Maintainability**: Code must adhere to TypeScript strict mode. Linting & formatting enforced by ESLint/Prettier.
-
----
+*   **Performance**: Initial dashboard load under 1 second for up to 1,000 records.
+*   **Scalability**: Ability to handle pagination or server streaming if record counts exceed 10,000.
+*   **Security**: All API calls from server to server; no secrets exposed in the frontend. HTTPS only. JWT or secure cookie flagged HttpOnly.
+*   **Reliability**: Uptime of 99.5% SLA when deployed via Vercel or container cluster.
+*   **Usability**: WCAG 2.1 AA compliance for color contrast and keyboard navigation.
+*   **Maintainability**: 80% code coverage for critical data-transformation functions and core components.
 
 ## 7. Constraints & Assumptions
 
-- **No Database**: Dashboard uses only `data.json`; real database integration is deferred.
-- **Node Version**: Requires Node.js >= 14.
-- **Next.js Version**: Built on Next.js 13+ App Router.
-- **Authentication**: Assumes availability of bcrypt or NextAuth.js at implementation time.
-- **Hosting**: Targets serverless or Node.js-capable hosting (e.g., Vercel, Netlify).
-- **Browser Support**: Modern evergreen browsers; no IE11 support required.
-
----
+*   The ASP.NET Core API endpoint (`/api/circuits/report`) exists or will be created before frontend integration.
+*   Environment variables (`API_BASE_URL`, auth secrets) are correctly set in each environment.
+*   Better Auth library remains supported or a JWT alternative can be implemented.
+*   The circuit data JSON schema matches the agreed OpenAPI contract.
+*   Next.js 14+ and Node.js 18+ are available in dev and production.
+*   No third-party rate limits on the internal API; if they exist, caching or pagination will be required.
 
 ## 8. Known Issues & Potential Pitfalls
 
-- **Static Data Limitation**: `data.json` is only for demo. A real API or database will be needed to avoid stale data.
-  *Mitigation*: Define a clear interface for data fetching so swapping to a live endpoint is trivial.
+*   **Data Shape Mismatch**: If the C# API changes the JSON schema, the dashboard will break at runtime. Mitigation: use Zod schemas and enforce OpenAPI validation on the backend.
+*   **Large Datasets**: Rendering thousands of rows in one table can kill performance. Mitigation: implement server-side pagination or infinite scrolling.
+*   **Authentication Integration**: Swapping Better Auth for JWT requires consistent token issuance and refresh flows. Mitigation: define clear token-exchange endpoints and lifetimes ahead of time.
+*   **Cross-Origin Requests**: The Next.js server must whitelist the API host. Ensure CORS policies allow server-to-server calls.
+*   **Container Ports & Networking**: Docker networking in local dev may conflict with existing services. Mitigation: document required ports in `docker-compose.yml` and allow overrides.
 
-- **Global CSS Conflicts**: Using global styles can lead to unintended overrides.
-  *Mitigation*: Plan to migrate to CSS Modules or utility-first CSS in Phase 2.
-
-- **API Route Ambiguity**: Single `/api/auth/route.ts` handling both sign-up and sign-in could get complex.
-  *Mitigation*: Clearly branch on HTTP method (`POST /register` vs. `POST /login`) or split into separate files.
-
-- **Lack of Testing**: No test suite means regressions can slip in.
-  *Mitigation*: Build a minimal Jest + React Testing Library setup in an early iteration.
-
-- **Error Handling Gaps**: Client and server must handle edge cases (network failures, malformed input).
-  *Mitigation*: Define a standard error response schema and show user-friendly messages.
-
----
-
-This PRD should serve as the single source of truth for the AI model or any developer generating the next set of technical documents: Tech Stack Doc, Frontend Guidelines, Backend Structure, App Flow, File Structure, and IDE Rules. It contains all functional and non-functional requirements with no ambiguity, enabling seamless downstream development.
+This PRD covers all essential details for an AI model to generate subsequent technical documents—Tech Stack Doc, Frontend Guidelines, Backend Structure, App Flow, File Structure, IDE Rules, and more—without ambiguity.

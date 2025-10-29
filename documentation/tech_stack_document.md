@@ -1,90 +1,112 @@
-# Tech Stack Document
+# Tech Stack Document: EIS Visualization Dashboard
 
-This document explains the key technologies chosen for the **codeguide-starter** project. It’s written in everyday language so anyone—technical or not—can understand why each tool was picked and how it supports the application.
+This document explains, in everyday language, why we chose each technology for your Executive Information System (EIS) visualization dashboard. It should help anyone—technical or not—understand how the pieces fit together and why they matter.
 
-## 1. Frontend Technologies
-The frontend is everything the user sees and interacts with. For this project, we’ve used:
+## Frontend Technologies
 
-- **Next.js (App Router)**
-  - A React framework that makes page routing, server-side rendering, and API routes very simple.
-  - Enhances user experience by pre-rendering pages on the server or at build time, leading to faster initial load.
-- **React 18**
-  - The underlying library for building user interfaces with reusable components.
-  - Provides a smooth, interactive experience thanks to its virtual DOM and modern hooks.
-- **TypeScript**
-  - A superset of JavaScript that adds types (labels for data).
-  - Helps catch errors early during development and makes the code easier to maintain.
-- **CSS (globals.css & theme.css)**
-  - **globals.css** applies base styles (fonts, colors, resets) across the entire app.
-  - **dashboard/theme.css** defines the look and feel specific to the dashboard area.
-  - This separation keeps styles organized and avoids accidental style conflicts.
+We built the user-facing side of the dashboard using modern, easy-to-work-with tools that make it fast, reliable, and pleasant to look at.
 
-By combining these tools, we have a clear structure (Next.js folders for pages and layouts), safer code (TypeScript), and flexible styling with vanilla CSS.
+- **Next.js (App Router)**  
+  A React-based framework that handles routing and server-side rendering. It keeps sensitive API details hidden from users while letting us fetch data securely on the server.
 
-## 2. Backend Technologies
-The backend handles data, user accounts, and the logic behind the scenes. Our choices here are:
+- **TypeScript**  
+  A superset of JavaScript that adds type checking. This means we catch mistakes early, such as mismatched data fields, which leads to fewer runtime bugs.
 
-- **Next.js API Routes**
-  - Allows us to write server-side code (`route.ts` files) alongside our frontend in the same project.
-  - Runs on Node.js, so we can handle requests like sign-up, sign-in, and data fetching in one place.
-- **Node.js Runtime**
-  - The JavaScript environment on the server that executes our API routes.
-- **bcrypt** (npm package)
-  - A library for hashing passwords securely before storing them.
-  - Ensures that even if someone got access to our data, raw passwords aren’t visible.
-- **(Optional) NextAuth.js or JWT**
-  - While this starter kit shows a custom authentication flow, it can easily integrate services like NextAuth.js for email-based login or JWT (JSON Web Tokens) for stateless sessions.
+- **Tailwind CSS & CSS Variables**  
+  A utility-first styling system plus customizable variables for colors, fonts, and spacing. It lets us build custom-branded layouts quickly and support both light and dark modes out of the box.
 
-These components work together to receive user credentials, verify or store them securely, manage sessions or tokens, and deliver protected data back to the frontend.
+- **shadcn/ui**  
+  A library of pre-built, accessible React components (tables, forms, modals, etc.). It ensures a consistent look and feel and speeds up development by avoiding one-off component design.
 
-## 3. Infrastructure and Deployment
-Infrastructure covers where and how we host the app, as well as how changes get delivered:
+- **Better Auth**  
+  A lightweight, file-based authentication library for user sign-up, login, and session handling. It’s perfect if you want the dashboard to manage its own users, or it can be swapped for a JWT-based flow if you prefer to integrate with your existing ASP.NET identity.
 
-- **Git & GitHub**
-  - Version control system (Git) and remote hosting (GitHub) keep track of all code changes and allow team collaboration.
-- **Vercel (or Netlify)**
-  - A popular hosting service optimized for Next.js, with one-click deployments and global content delivery.
-  - Automatically rebuilds and deploys the site whenever code is pushed to the main branch.
-- **GitHub Actions (CI/CD)**
-  - Automates tasks like linting (ESLint), formatting (Prettier), and running any tests you add.
-  - Ensures that only clean, tested code goes live.
+- **Charting & Mapping Libraries**  
+  - **Recharts** or **Chart.js** for bar charts, pie charts, and line graphs.  
+  - **Leaflet** or **Mapbox** for interactive maps plotting circuit endpoints.
+  These are optional but highly recommended for clear data visualization.
 
-Together, these tools provide a reliable, scalable setup where every code change is tested and deployed quickly, with minimal manual work.
+- **Zod** (optional)  
+  A runtime data validation library. It checks that the data coming from your API matches what our components expect before rendering anything.
 
-## 4. Third-Party Integrations
-While this starter kit is minimal by design, it already includes or can easily add:
+- **Vitest & React Testing Library** (optional)  
+  A testing setup for checking that components render correctly and data-shaping functions work as intended.
 
-- **bcrypt**
-  - For secure password hashing (included as an npm dependency).
-- **NextAuth.js** (optional)
-  - A full-featured authentication library supporting email/password, OAuth, and more.
-- **Sentry or LogRocket** (optional)
-  - For real-time error tracking and performance monitoring in production.
+## Backend Technologies
 
-These integrations help extend the app’s capabilities without building every feature from scratch.
+The dashboard relies on your existing data and business logic, so we tap into your ASP.NET C# backend and SQL Server database.
 
-## 5. Security and Performance Considerations
-We’ve baked in several measures to keep users safe and the app running smoothly:
+- **ASP.NET Core (C#)**  
+  Hosts a secure REST API endpoint (e.g., `/api/circuits/report`) that runs your complex SQL Server query and returns the results as JSON.
 
-Security:
-- Passwords are never stored in plain text—bcrypt hashes them with a random salt.
-- API routes can implement CSRF protection and input validation to block malicious requests.
-- Session tokens or cookies are marked secure and HttpOnly to prevent theft via JavaScript.
+- **SQL Server**  
+  Your primary data store where circuit records live. The API controller in C# executes the SQL query and serializes results.
 
-Performance:
-- Server-side rendering (SSR) and static site generation (SSG) in Next.js deliver pages faster.
-- Code splitting and lazy-loaded components ensure users only download what they need.
-- Global CSS and theme files are small and cached by the browser for quick repeat visits.
+- **Drizzle ORM** (optional)  
+  Included as an example data layer if you ever connect directly from Next.js to a database. In your scenario, we recommend calling your ASP.NET API instead, so Drizzle stays unused or serves as a reference.
 
-These strategies work together to give users a fast, secure experience every time.
+- **JWT Tokens / Token-Based Auth**  
+  If you integrate login with your ASP.NET identity, the API can issue a token at login. Next.js will forward that token on each request to prove the user is authenticated.
 
-## 6. Conclusion and Overall Tech Stack Summary
-In building **codeguide-starter**, we chose technologies that:
+## Infrastructure and Deployment
 
-- Align with modern web standards (Next.js, React, TypeScript).
-- Provide a clear, file-based project structure for rapid onboarding.
-- Offer built-in support for server-side rendering, API routes, and static assets.
-- Emphasize security through password hashing, session management, and safe defaults.
-- Enable easy scaling and future enhancements via modular code and optional integrations.
+These choices make it easy to develop, test, and deploy the dashboard, while keeping it reliable and scalable.
 
-This stack strikes a balance between simplicity for newcomers and flexibility for experienced teams. It accelerates development of a secure authentication flow and a polished dashboard, while leaving room to plug in databases, test suites, and advanced features as the project grows.
+- **Git & GitHub**  
+  Version control for tracking every change. GitHub acts as the central code repository and collaboration hub.
+
+- **Docker**  
+  Containerizes the Next.js app so it runs the same way everywhere—locally, in testing, or in production.
+
+- **Vercel**  
+  A hosting platform built for Next.js. It offers automatic builds, global edge delivery, and simple environment variable management. Alternatively, you can host the Docker container on your own infrastructure or cloud provider.
+
+- **CI/CD (Continuous Integration / Continuous Deployment)**  
+  When you push changes to GitHub, tests run automatically (Vitest, linter checks), and Vercel can deploy the updated dashboard without manual intervention.
+
+## Third-Party Integrations
+
+We integrate a few external services and libraries to add features without reinventing the wheel.
+
+- **Better Auth**  
+  Handles user authentication securely.
+
+- **Recharts / Chart.js**  
+  Renders interactive charts for your circuit metrics.
+
+- **Leaflet / Mapbox**  
+  Displays circuit endpoints and paths on a map for spatial analysis.
+
+- **Swagger / OpenAPI** (optional)  
+  Documents your ASP.NET API contract so frontend and backend teams agree on data formats.
+
+## Security and Performance Considerations
+
+We’ve built in safeguards and optimizations to keep your data safe and the dashboard snappy.
+
+- **Server-Side Data Fetching**  
+  Next.js server components call your API, hiding keys and URLs from the browser and reducing attack surface.
+
+- **Type Safety**  
+  TypeScript plus Zod ensures that only correctly shaped data reaches your components, preventing unexpected errors.
+
+- **Token-Based Authentication**  
+  JWT tokens or Better Auth sessions secure API calls and protect sensitive data.
+
+- **Code Splitting & Caching**  
+  Next.js automatically splits code by page and caches static assets at the edge, resulting in faster load times.
+
+- **HTTP Security Headers**  
+  Vercel can inject industry-standard headers (CSP, HSTS, etc.) to guard against common web attacks.
+
+## Conclusion and Overall Tech Stack Summary
+
+We’ve chosen a modern, modular set of tools that work together to deliver a secure, high-performance dashboard:
+
+- Frontend: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Better Auth
+- Backend: ASP.NET Core (C#), SQL Server, REST API, optional Drizzle ORM
+- Deployment: GitHub, Docker, Vercel, CI/CD pipelines
+- Visualizations: Recharts/Chart.js, Leaflet/Mapbox
+- Quality & Security: Zod, Swagger/OpenAPI, testing libraries, security headers
+
+These technologies align perfectly with your goal: a clean, maintainable visualization layer on top of your existing EIS, ensuring executives and analysts get fast, interactive insights without compromising security or slowing down development. Feel free to adapt or extend any part of this stack as your needs evolve.
