@@ -1,14 +1,14 @@
 flowchart TD
-  Start[Landing Page]
-  SignUpPage[Sign Up Page]
-  SignInPage[Sign In Page]
-  AuthAPI[Authentication API Endpoint]
-  DashboardPage[Dashboard Page]
-  Start -->|Select Sign Up| SignUpPage
-  Start -->|Select Sign In| SignInPage
-  SignUpPage -->|Submit Credentials| AuthAPI
-  SignInPage -->|Submit Credentials| AuthAPI
-  AuthAPI -->|Success| DashboardPage
-  AuthAPI -->|Error| SignUpPage
-  AuthAPI -->|Error| SignInPage
-  DashboardPage -->|Click Logout| Start
+    Start[Start] --> AuthCheck{User authenticated}
+    AuthCheck -- Yes --> FetchData[Fetch data from C# API]
+    AuthCheck -- No --> LoginPage[Show login page]
+    LoginPage --> AuthProcess[Process login]
+    AuthProcess --> AuthCheck
+    FetchData --> SerializeData[Serialize JSON response]
+    SerializeData --> RenderDashboard[Render dashboard page]
+    RenderDashboard --> DataTable[Display data table]
+    RenderDashboard --> ChartView[Display charts]
+    RenderDashboard --> MapView[Display map visualization]
+    DataTable --> End[End]
+    ChartView --> End
+    MapView --> End

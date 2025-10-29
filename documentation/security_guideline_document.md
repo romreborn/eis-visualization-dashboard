@@ -1,116 +1,112 @@
-# Security Guidelines for codeguide-starter
+# Executive Information System (EIS) Visualization Dashboard – Security Guidelines
 
-This document defines mandatory security principles and implementation best practices tailored to the **codeguide-starter** repository. It aligns with Security-by-Design, Least Privilege, Defense-in-Depth, and other core security tenets. All sections reference specific areas of the codebase (e.g., `/app/api/auth/route.ts`, CSS files, environment configuration) to ensure practical guidance.
+This document outlines the security best practices and requirements for the EIS Visualization Dashboard codebase. It is organized around established security principles and tailored to the Next.js/Tailwind/Better Auth boilerplate described.
 
 ---
 
 ## 1. Security by Design
 
-• Embed security from day one: review threat models whenever adding new features (e.g., new API routes, data fetching).
-• Apply “secure defaults” in Next.js configuration (`next.config.js`), enabling strict mode and disabling debug flags in production builds.
-• Maintain a security checklist in your PR template to confirm that each change has been reviewed against this guideline.
-
----
+•  Embed security from day one. Every new component, API, or configuration change must consider potential threats.
+•  Perform threat modeling when introducing new features (e.g., interactive map, chart components).
+•  Keep business logic (data fetching, sensitive operations) on the server–side using Next.js server components to minimize client exposure.
 
 ## 2. Authentication & Access Control
 
-### 2.1 Password Storage
-- Use **bcrypt** (or Argon2) with a per-user salt to hash passwords in `/app/api/auth/route.ts`.
-- Enforce a strong password policy on both client and server: minimum 12 characters, mixed case, numbers, and symbols.
+### 2.1 Implement Robust Authentication
+•  If using Better Auth as a standalone solution:
+   - Enforce strong password policies (minimum length, complexity, rotation if required).
+   - Use bcrypt or Argon2 with per-user salts for password hashing.
+•  If integrating with existing ASP.NET identity:
+   - Adopt JWT tokens signed with a strong key (HS256 or RS256).
+   - Validate `alg`, `iss`, `aud`, and `exp` claims on each request.
 
-### 2.2 Session Management
-- Issue sessions via Secure, HttpOnly, SameSite=strict cookies. Do **not** expose tokens to JavaScript.
-- Implement absolute and idle timeouts. For example, invalidate sessions after 30 minutes of inactivity.
-- Protect against session fixation by regenerating session IDs after authentication.
+### 2.2 Secure Session Management
+•  Generate unpredictable session identifiers.
+•  Store session IDs in `HttpOnly`, `Secure`, `SameSite=Strict` cookies.
+•  Enforce idle and absolute timeouts; implement logout and session revocation.
+•  Protect against session fixation by rotating session IDs on privilege changes.
 
-### 2.3 Brute-Force & Rate Limiting
-- Apply rate limiting at the API layer (e.g., using `express-rate-limit` or Next.js middleware) on `/api/auth` to throttle repeated login attempts.
-- Introduce exponential backoff or temporary lockout after N failed attempts.
+### 2.3 Role-Based Access Control (RBAC)
+•  Define minimal roles (e.g., Admin, Analyst, Viewer).
+•  Enforce permission checks on each server route (`/app/dashboard/*`).
+•  Reject unauthorized attempts with HTTP 403; never expose sensitive payloads.
 
-### 2.4 Role-Based Access Control (Future)
-- Define user roles in your database model (e.g., `role = 'user' | 'admin'`).
-- Enforce server-side authorization checks in every protected route (e.g., in `dashboard/layout.tsx` loader functions).
+## 3. Input Validation & Output Encoding
 
----
-
-## 3. Input Handling & Processing
-
-### 3.1 Validate & Sanitize All Inputs
-- On **client** (`sign-up/page.tsx`, `sign-in/page.tsx`): perform basic format checks (email regex, password length).
-- On **server** (`/app/api/auth/route.ts`): re-validate inputs with a schema validator (e.g., `zod`, `Joi`).
-- Reject or sanitize any unexpected fields to prevent injection attacks.
-
-### 3.2 Prevent Injection
-- If you introduce a database later, always use parameterized queries or an ORM (e.g., Prisma) rather than string concatenation.
-- Avoid dynamic `eval()` or template rendering with unsanitized user input.
-
-### 3.3 Safe Redirects
-- When redirecting after login or logout, validate the target against an allow-list to prevent open redirects.
-
----
+•  Treat all user input (query params, request bodies) as untrusted.
+•  On the Next.js server, validate API responses using a schema library (e.g., Zod) to ensure data conforms to expected types.
+•  Sanitize any dynamic UI output (chart labels, table cells) with React’s built-in escaping or a trusted encoder.
+•  Use parameterized queries or sanitized queries on ASP.NET endpoints to prevent SQL injection.
 
 ## 4. Data Protection & Privacy
 
-### 4.1 Encryption & Secrets
-- Enforce HTTPS/TLS 1.2+ for all front-end ↔ back-end communications.
-- Never commit secrets—use environment variables and a secrets manager (e.g., AWS Secrets Manager, Vault).
+### 4.1 Encryption In Transit & At Rest
+•  Enforce HTTPS (TLS 1.2+) for all client–server and server–server communication.
+•  Store environment secrets and API keys only in secure vaults or encrypted environment variables.
 
-### 4.2 Sensitive Data Handling
-- Do ​not​ log raw passwords, tokens, or PII in server logs. Mask or redact any user identifiers.
-- If storing PII in `data.json` or a future database, classify it and apply data retention policies.
+### 4.2 Secret Management
+•  Do **not** hardcode credentials in code or `.env` files stored in source control.
+•  Use a secrets manager (e.g., Azure Key Vault, AWS Secrets Manager) and fetch at build/deploy time.
 
----
+### 4.3 Data Minimization & Masking
+•  Only return required fields (`CircuitID`, `Status`, etc.) in API responses.
+•  Mask or hash any PII fields before sending to the client.
 
 ## 5. API & Service Security
 
-### 5.1 HTTPS Enforcement
-- In production, redirect all HTTP traffic to HTTPS (e.g., via Vercel’s redirect rules or custom middleware).
-
-### 5.2 CORS
-- Configure `next.config.js` or API middleware to allow **only** your front-end origin (e.g., `https://your-domain.com`).
-
-### 5.3 API Versioning & Minimal Exposure
-- Version your API routes (e.g., `/api/v1/auth`) to handle future changes without breaking clients.
-- Return only necessary fields in JSON responses; avoid leaking internal server paths or stack traces.
-
----
+•  Expose only necessary endpoints (`/api/circuits/report`), and version them.
+•  Implement rate limiting and request throttling on the ASP.NET API to protect against DoS.
+•  Restrict CORS to known origins (e.g., your corporate dashboard URL).
+•  Validate redirect URIs against an allow-list if using any OAuth or post-login redirects.
 
 ## 6. Web Application Security Hygiene
 
 ### 6.1 CSRF Protection
-- Use anti-CSRF tokens for any state-changing API calls. Integrate Next.js CSRF middleware or implement synchronizer tokens stored in cookies.
+•  Enable CSRF tokens (synchronizer token pattern) for all state-changing forms and API calls.
 
 ### 6.2 Security Headers
-- In `next.config.js` (or a custom server), add these headers:
-  - `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
-  - `X-Content-Type-Options: nosniff`
-  - `X-Frame-Options: DENY`
-  - `Referrer-Policy: no-referrer-when-downgrade`
-  - `Content-Security-Policy`: restrict script/style/src to self and trusted CDNs.
+Add or enforce via Next.js middleware or hosting platform:
+   - `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
+   - `Content-Security-Policy`: limit scripts, styles, and frame sources to trusted origins.
+   - `X-Frame-Options: DENY` or equivalent CSP directive to prevent clickjacking.
+   - `X-Content-Type-Options: nosniff` to prevent MIME-based attacks.
+   - `Referrer-Policy: strict-origin-when-cross-origin`
 
 ### 6.3 Secure Cookies
-- Set `Secure`, `HttpOnly`, `SameSite=Strict` on all cookies. Avoid storing sensitive data in `localStorage`.
+•  Always use `Secure`, `HttpOnly`, `SameSite=Strict`.
+•  Do not store sensitive tokens in `localStorage` or `sessionStorage`.
 
-### 6.4 Prevent XSS
-- Escape or encode all user-supplied data in React templates. Avoid `dangerouslySetInnerHTML` unless content is sanitized.
-
----
+### 6.4 Subresource Integrity (SRI)
+•  If loading any third-party scripts or styles, use SRI hashes to ensure integrity.
 
 ## 7. Infrastructure & Configuration Management
 
-- Harden your hosting environment (e.g., Vercel/Netlify) by disabling unnecessary endpoints (GraphQL/GraphiQL playgrounds in production).
-- Rotate secrets and API keys regularly via your secrets manager.
-- Maintain minimal privileges: e.g., database accounts should only have read/write on required tables.
-- Keep Node.js, Next.js, and all system packages up to date.
-
----
+•  Harden Docker images:
+   - Use minimal base images (e.g., `node:18-alpine`).
+   - Run the Next.js process as a non-root user.
+•  Disable debug and verbose logging in production.
+•  Regularly update OS, Node.js, and all libraries to patch vulnerabilities.
+•  Limit exposed ports to only those necessary (e.g., 80/443).
 
 ## 8. Dependency Management
 
-- Commit and maintain `package-lock.json` to guarantee reproducible builds.
-- Integrate a vulnerability scanner (e.g., GitHub Dependabot, Snyk) to monitor and alert on CVEs in dependencies.
-- Trim unused packages; each added library increases the attack surface.
+•  Maintain and commit a lockfile (`package-lock.json`).
+•  Use an SCA tool (e.g., npm audit, Snyk) integrated into CI to detect CVEs.
+•  Periodically review and update dependencies; remove unused packages to reduce attack surface.
+
+## 9. Monitoring, Logging & Incident Response
+
+•  Log authentication failures, authorization denials, and critical errors with minimal sensitive data.
+•  Centralize logs in a secure, tamper-resistant system (e.g., ELK stack, Splunk).
+•  Implement alerts for repeated failed logins or unusual API activity.
+•  Define and test an incident response plan for data breaches or service compromises.
+
+## 10. Testing & Validation
+
+•  Write automated unit tests (Vitest) for data-transformation functions and permission logic.
+•  Perform static analysis (ESLint, TypeScript) and security linting (npm audit).
+•  Conduct periodic security reviews and penetration tests, especially before major releases.
 
 ---
 
-Adherence to these guidelines will ensure that **codeguide-starter** remains secure, maintainable, and resilient as it evolves. Regularly review and update this document to reflect new threats and best practices.
+Adhering to these guidelines will ensure the EIS Visualization Dashboard remains secure, reliable, and compliant with industry best practices. Regularly revisit and update these controls as your application and threat landscape evolve.
